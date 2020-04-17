@@ -1,0 +1,5 @@
+"Signing the binary file"
+D:\checkout\amazon-freertos_forSubmit_1\amazon-freertos022020_git\projects\libre\mavid\iar\aws_tests\
+"Encrypting the binary file"
+D:\checkout\amazon-freertos_forSubmit_1\amazon-freertos022020_git\projects\libre\mavid\iar\aws_tests\
+"Encryption done"

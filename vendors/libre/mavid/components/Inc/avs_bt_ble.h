@@ -1,0 +1,94 @@
+/* BT AVS Run time source switch via console */
+#ifndef _BT_ABS_SS_H
+#define _BT_ABS_SS_H
+
+#ifdef BLE_MAVID_APP
+
+#include "FreeRTOS.h"
+#include "cmsis_os.h"
+#include "pf_trace.h"
+#include "env_uid.h"
+#include "bta_api.h"
+#include "bta_av_api.h"
+#include "btapp_dm.h"
+
+#include "compiler_port.h"
+#include "os_port.h"
+#include "os_port_freertos.h"
+
+
+
+typedef enum {
+  BLE_SAC_SERVER_INIT = 1,
+  BLE_SAC_SERVER_INIT_DONE,
+  BLE_SAC_SERVET_CONNECTED,
+  BLE_SAC_WAIT_SCAN_REQ,
+  BLE_SAC_SERVER_WAIT_CRED,
+  BLE_SAC_WIFI_CONNECTING,
+  BLE_SAC_WIFI_CONNECTED,
+  BLE_SAC_SERVER_DONE,
+} BLE_SAC_SERVER_MODE_E;
+
+
+
+#define BLE_NOTIFY_SAC_CRED_OK  		0
+#define BLE_NOTIFY_SAC_INV_CRED		        1
+#define BLE_NOTIFY_STARTED		        2
+#define BLE_NOTIFY_STOPPED		        3
+#define BLE_NOTIFY_WIFI_CONNECTING		4
+#define BLE_NOTIFY_WIFI_CONNECTED		5
+#define BLE_NOTIFY_WIFI_DISCONNECTED		6
+#define BLE_NOTIFY_WIFI_IDLE		        7
+#define BLE_NOTIFY_WIFI_OFF		        8
+#define BLE_NOTIFY_WIFI_SCANLIST_START	        9
+#define BLE_NOTIFY_WIFI_SCANLIST_END		10
+#define BLE_NOTIFY_WIFI_SCANLIST_DATA		11
+#define BLE_NOTIFY_WIFI_READ_STATUS		12
+#define BLE_NOTIFY_SAC_NOT_ALLOWED		13
+#define BLE_NOTIFY_SAC_TIMEOUT			14
+#define BLE_NOTIFY_WIFI_SAC_FAILED              15
+#define BLE_NOTIFY_WIFI_CONNECTION_FAILED       16
+#define BLE_NOTIFY_DEVICE_STATUS                17
+#define BLE_NOTIFY_DEVICE_INFO                  18
+#define BLE_NOTIFY_SAC_VERSION                  19
+#define BLE_NOTIFY_COMMAND_NOT_SUPPORTED        0xFF
+
+#define BLE_MAX_DATA_LEN        128
+
+
+
+typedef enum{
+  BLE_STARTED             = BLE_NOTIFY_STARTED,
+  BLE_STOPPED             = BLE_NOTIFY_STOPPED,
+  BLE_SAC_CRED_OK         = BLE_NOTIFY_SAC_CRED_OK,
+  BLE_SAC_INV_CRED        = BLE_NOTIFY_SAC_INV_CRED,
+  BLE_WIFI_CONNECTING     = BLE_NOTIFY_WIFI_CONNECTING,
+  BLE_WIFI_CONNECTED      = BLE_NOTIFY_WIFI_CONNECTED,
+  BLE_WIFI_DISCONNECTED   = BLE_NOTIFY_WIFI_DISCONNECTED,
+  BLE_WIFI_IDLE           = BLE_NOTIFY_WIFI_IDLE,
+  BLE_WIFI_OFF            = BLE_NOTIFY_WIFI_OFF,
+  BLE_WIFI_SCANLIST_START = BLE_NOTIFY_WIFI_SCANLIST_START,
+  BLE_WIFI_SCANLIST_END   = BLE_NOTIFY_WIFI_SCANLIST_END,
+  BLE_WIFI_SCANLIST_DATA  = BLE_NOTIFY_WIFI_SCANLIST_DATA,
+  BLE_WIFI_READ_STATUS    = BLE_NOTIFY_WIFI_READ_STATUS,
+  BLE_SAC_NOT_ALLOWED     = BLE_NOTIFY_SAC_NOT_ALLOWED,
+  BLE_SAC_TIMEOUT         = BLE_NOTIFY_SAC_TIMEOUT,
+  BLE_WIFI_SAC_FAILED     = BLE_NOTIFY_WIFI_SAC_FAILED,
+  BLE_WIFI_CONNECTION_FAILED = BLE_NOTIFY_WIFI_CONNECTION_FAILED,
+  BLE_READ_DEVICE_STATUS  = BLE_NOTIFY_DEVICE_STATUS,
+  BLE_READ_DEVICE_INFO    = BLE_NOTIFY_DEVICE_INFO,
+  BLE_READ_SAC_VERSION    = BLE_NOTIFY_SAC_VERSION,
+  BLE_COMMAND_NOT_SUPPORTED = BLE_NOTIFY_COMMAND_NOT_SUPPORTED,
+  BLE_CONNECTED           = 100,
+  BLE_DISCONNECTED        = 101
+} BLE_RSP_EVT;
+
+void start_BLE_server(void);
+void stop_BLE_server(void);
+void notify_ble_notification_event(int status);
+void update_ble_mtu_size(uint16_t mtu_size);
+void update_ble_sac_state(BLE_SAC_SERVER_MODE_E state);
+void notfiy_SAC_state(BLE_SAC_SERVER_MODE_E state);
+
+#endif
+#endif
