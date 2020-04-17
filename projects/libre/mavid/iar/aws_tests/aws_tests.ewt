@@ -4675,62 +4675,62 @@
     </file>
   </group>
   <group>
-    <name>freertos_kernel</name>
+    <name>FreeRTOS-Kernel</name>
     <group>
       <name>include</name>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\atomic.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\atomic.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\croutine.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\croutine.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\deprecated_definitions.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\deprecated_definitions.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\event_groups.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\event_groups.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\FreeRTOS.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\FreeRTOS.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\list.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\list.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\message_buffer.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\message_buffer.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\mpu_prototypes.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\mpu_prototypes.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\mpu_wrappers.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\mpu_wrappers.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\portable.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\portable.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\projdefs.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\projdefs.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\queue.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\queue.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\semphr.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\semphr.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\stack_macros.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\stack_macros.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\StackMacros.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\StackMacros.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\stream_buffer.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\stream_buffer.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\task.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\task.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\include\timers.h</name>
+        <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\include\timers.h</name>
       </file>
     </group>
     <group>
@@ -4738,48 +4738,45 @@
       <group>
         <name>IAR</name>
         <group>
-          <name>ARM_C7</name>
+          <name>ARM_CM7</name>
           <file>
-            <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\portable\IAR\ARM_CM7\r0p1\port.c</name>
+            <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\portable\IAR\ARM_CM7\r0p1\port.c</name>
           </file>
           <file>
-            <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\portable\IAR\ARM_CM7\r0p1\portasm.s</name>
+            <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\portable\IAR\ARM_CM7\r0p1\portasm.s</name>
           </file>
         </group>
       </group>
       <group>
-        <name>MenMang</name>
+        <name>MemMang</name>
         <file>
-          <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\portable\MemMang\heap_4.c</name>
+          <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\portable\MemMang\heap_4.c</name>
         </file>
       </group>
     </group>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\vendors\libre\mavid\components\CMSIS_RTOS\cmsis_os.c</name>
-    </file>
-    <file>
       <name>$PROJ_DIR$\..\..\..\..\..\vendors\libre\mavid\components\CMSIS_RTOS\cmsis_os2.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\croutine.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\croutine.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\event_groups.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\event_groups.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\list.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\list.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\queue.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\queue.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\stream_buffer.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\stream_buffer.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\tasks.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\tasks.c</name>
     </file>
     <file>
-      <name>$PROJ_DIR$\..\..\..\..\..\freertos_kernel\timers.c</name>
+      <name>$PROJ_DIR$\..\..\..\..\..\FreeRTOS-Kernel\timers.c</name>
     </file>
   </group>
   <group>
