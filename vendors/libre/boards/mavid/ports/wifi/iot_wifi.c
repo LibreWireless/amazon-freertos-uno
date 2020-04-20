@@ -20,6 +20,7 @@
 #include <lwip/netdb.h>
 /* Basic FreeRTOS definitions. */
 #include "projdefs.h"
+#include "FreeRTOS.h"
 
 #include "iot_wifi.h"
 #include "wifi_apis.h"
@@ -136,6 +137,9 @@ WIFIReturnCode_t WIFI_ConnectAP( const WIFINetworkParams_t * const pxNetworkPara
 {
   WIFIReturnCode_t ret = eWiFiSuccess;  
   wifitrlmsg *msg;
+  uint32_t retryPeriodMs = 250;
+  BaseType_t xMaxRetries = 5, lRetries = 0;
+
   printf("WIFI_ConnectAP\n"); 
   if (pxNetworkParams == NULL || pxNetworkParams->pcSSID == NULL
             || (pxNetworkParams->xSecurity != eWiFiSecurityOpen && pxNetworkParams->pcPassword == NULL)) {
@@ -154,6 +158,22 @@ WIFIReturnCode_t WIFI_ConnectAP( const WIFINetworkParams_t * const pxNetworkPara
   msg = create_ctrlmsg(WIFI_CONNECT, cfg, sizeof(connectparam), true, 15000);
   if(postmsg_wifi(msg) != 0)
     ret = eWiFiTimeout;
+
+  if( eWiFiSuccess == ret )
+  {
+    ret = eWiFiFailure;
+    for( ; lRetries < xMaxRetries; lRetries++ ) {                      
+      vTaskDelay( pdMS_TO_TICKS( retryPeriodMs ) );               
+      if( pdTRUE == WIFI_IsConnected() )
+      {
+        ret = eWiFiSuccess;
+        break;
+      }
+      printf( "retry %d fail, timeout = %d \n",lRetries, retryPeriodMs );  
+      retryPeriodMs *= 2;                                         
+    }                                                                
+  }
+
   return ret;
 }
 
