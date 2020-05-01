@@ -314,11 +314,8 @@ void sys_init(void)
 /* Create a new mutex*/
 err_t sys_mutex_new(sys_mutex_t *mutex) {
   
-  osMutexDef(MUTEX);
-  
-  *mutex = osMutexCreate(osMutex(MUTEX));
-  
-  
+  *mutex = osMutexCreate(NULL);
+
   //*mutex = xSemaphoreCreateMutex();
   if(*mutex == NULL)
   {

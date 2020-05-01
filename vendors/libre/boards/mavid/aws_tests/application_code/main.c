@@ -126,7 +126,7 @@ static void prvMiscInitialization( void )
 void Console_UART_Init( void )
 {
 	xConsoleUart.Instance        = UART5;
-	xConsoleUart.Init.BaudRate   = 460800;//115200; //
+	xConsoleUart.Init.BaudRate   = 115200; //460800;//
 	xConsoleUart.Init.WordLength = UART_WORDLENGTH_8B;
 	xConsoleUart.Init.StopBits   = UART_STOPBITS_1;
 	xConsoleUart.Init.Parity     = UART_PARITY_NONE;//UART_PARITY_ODD;

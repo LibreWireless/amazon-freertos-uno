@@ -27,8 +27,7 @@ typedef enum
 #define DHCPS_LOG
 #endif
 
-#define printf     DHCPS_LOG    
-
+#define printf 		DHCPS_LOG
 
 #if ESP_DHCP
 

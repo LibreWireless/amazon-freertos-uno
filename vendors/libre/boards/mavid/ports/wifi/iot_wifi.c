@@ -25,6 +25,8 @@
 #include "iot_wifi.h"
 #include "wifi_apis.h"
 #include "lwip/mem.h"
+#include "wifi_events.h"
+
 #ifdef VERBOSE_PRINT
 #define printf     vLoggingPrintf    
 #else
@@ -33,7 +35,8 @@
     
 
 
-
+static void network_callbcak_bridge(wlan_event evt);
+IotNetworkStateChangeEventCallback_t gCallback;
 
 WIFIReturnCode_t WIFI_GetIP( uint8_t * pucIPAddr )
 {
@@ -380,6 +383,26 @@ WIFIReturnCode_t WIFI_ConfigureAP( const WIFINetworkParams_t * const pxNetworkPa
     ret = eWiFiSuccess;
   }while(0);
   return ret;  
+}
+
+WIFIReturnCode_t WIFI_RegisterNetworkStateChangeEventCallback( IotNetworkStateChangeEventCallback_t xCallback ){
+  gCallback = xCallback;
+  subscribe_for_events(network_callbcak_bridge); //for network callbacks
+  return eWiFiSuccess;
+}
+
+
+void network_callbcak_bridge(wlan_event evt){
+  AwsIotNetworkState_t _state;
+  switch(evt){
+    case WLAN_CONNECTED:
+      _state = eNetworkStateEnabled;
+      break;
+    default:
+      _state = eNetworkStateDisabled;
+      break;
+  }
+  gCallback(AWSIOT_NETWORK_TYPE_WIFI, _state);
 }
 
 /************************ (C) LibreWireless Inc *****END OF FILE****/

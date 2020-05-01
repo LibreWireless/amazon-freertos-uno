@@ -21,7 +21,7 @@ extern "C" {
 #include "my_print.h"
 
 //#define HOST_TRIGGER_BREAKPOINT() __asm("bkpt 0")
-#define HOST_TRIGGER_BREAKPOINT() PRINTF("\nassert bkpt 0 %s, %d\r\n", __FILE__, __LINE__)
+#define HOST_TRIGGER_BREAKPOINT() //PRINTF("\nassert bkpt 0 %s, %d\r\n", __FILE__, __LINE__)
 #define HOST_ASSERTION_FAIL_ACTION() HOST_TRIGGER_BREAKPOINT()
 // Micky add --
 
