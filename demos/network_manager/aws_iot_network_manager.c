@@ -320,8 +320,6 @@ static IotNetworkManager_t networkManager =
         static bool bleInited = false;
         BTStatus_t status;
 
-        bleNetwork.state = eNetworkStateDisabled;
-
         if( bleInited == false )
         {
             if( IotBle_Init() == eBTStatusSuccess )
@@ -334,10 +332,14 @@ static IotNetworkManager_t networkManager =
                 ret = false;
             }
         }
-
-        if( ret == true )
+        else
         {
             status = IotBle_On();
+
+            if( status == eBTStatusSuccess )
+            {
+                status = IotBle_StartAdv( NULL );
+            }
 
             if( status != eBTStatusSuccess )
             {
@@ -352,11 +354,6 @@ static IotNetworkManager_t networkManager =
             ret = _bleRegisterUnregisterCb( false );
         }
 
-        if( ret == false )
-        {
-            bleNetwork.state = eNetworkStateUnknown;
-        }
-
         return ret;
     }
 
@@ -368,6 +365,14 @@ static IotNetworkManager_t networkManager =
 
         /* Unregister the callbacks */
         ret = _bleRegisterUnregisterCb( true );
+
+        if( ret == true )
+        {
+            if( IotBle_StopAdv( NULL ) != eBTStatusSuccess )
+            {
+                ret = false;
+            }
+        }
 
         if( ret == true )
         {
@@ -493,7 +498,6 @@ static IotNetworkManager_t networkManager =
 
         #if ( IOT_BLE_ENABLE_WIFI_PROVISIONING == 1 )
             vWiFiConnectTaskDestroy();
-            IotBleWifiProv_Deinit();
         #endif
 
         if( WIFI_IsConnected() == pdTRUE )
