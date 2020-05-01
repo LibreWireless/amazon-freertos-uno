@@ -60,6 +60,7 @@ function(afr_module)
         afr_cache_append(AFR_MODULES_PUBLIC ${module_name})
     endif()
 
+    # All modules implicitly depends on kernel unless INTERFACE or KERNEL is provided.
     if(NOT (ARG_INTERFACE OR ARG_KERNEL))
         afr_module_dependencies(
             ${module_name}
@@ -334,11 +335,7 @@ function(afr_resolve_dependencies)
     # If neither demos nor tests are enabled, then don't search the aws_demos/aws_tests targets.
     if(AFR_ENABLE_DEMOS OR AFR_ENABLE_TESTS)
         __search_afr_dependencies(${exe_target} dependencies)
-	afr_module_dependencies(${exe_base} INTERFACE ${dependencies})
-    endif()
-
-    if (AFR_ENABLE_UNIT_TESTS)
-	return()
+        afr_module_dependencies(${exe_base} INTERFACE ${dependencies})
     endif()
 
     # Make sure kernel can be enabled first.

@@ -21,7 +21,6 @@ class Certificate():
         return cert
 
     def create_keys_and_certificate(self):
-        print("Acquiring a certificate and private key from AWS IoT Core.")
         result = self.client.create_keys_and_certificate(setAsActive=True)
         return result
 
@@ -39,7 +38,6 @@ class Certificate():
 
         # Update the status of the certificate to INACTIVE
         try:
-            print("Deactivating certificate. ID: {}".format(self.id))
             self.client.update_certificate(certificateId=self.id,
                 newStatus='INACTIVE')
             cert_not_found = False
@@ -49,7 +47,6 @@ class Certificate():
 
         # Delete the certificate
         try:
-            print("Deleting certificate. ID: {}".format(self.id))
             self.client.delete_certificate(certificateId=self.id)
             cert_not_found = False
         except self.client.exceptions.ResourceNotFoundException:

@@ -384,7 +384,7 @@ class OtaAwsAgent:
                 '--protocols ' + \
                 ' '.join(protocols) + ' ' + \
                 '--aws-job-presigned-url-config ' + \
-                'expiresInSec=' + str(urlExpired),
+                'expiresInSec=' + urlExpired,
                 self._stageParams
             )
         else:
