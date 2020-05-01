@@ -1,125 +1,84 @@
-/*
- * FreeRTOS V202002.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * http://aws.amazon.com/freertos
- * http://www.FreeRTOS.org
- */
-
 #ifndef AWS_CLIENT_CREDENTIAL_KEYS_H
 #define AWS_CLIENT_CREDENTIAL_KEYS_H
 
-/*
- * @brief PEM-encoded client certificate.
- *
- * @todo If you are running one of the FreeRTOS demo projects, set this
- * to the certificate that will be used for TLS client authentication.
- *
- * @note Must include the PEM header and footer:
- * "-----BEGIN CERTIFICATE-----\n"\
- * "...base64 data...\n"\
- * "-----END CERTIFICATE-----\n"
- */
-#define keyCLIENT_CERTIFICATE_PEM                   \
-"-----BEGIN CERTIFICATE-----\n"\
-"MIIDuTCCAqECFGh2ifOAVNjjMU59lAk7hzju85MTMA0GCSqGSIb3DQEBCwUAMIGY\n"\
-"MQswCQYDVQQGEwJVUzELMAkGA1UECAwCV0ExDjAMBgNVBAcMBVBsYWNlMRYwFAYD\n"\
-"VQQKDA1MaWJyZXdpcmVsZXNzMQswCQYDVQQLDAJJVDEeMBwGA1UEAwwVd3d3Lmxp\n"\
-"YnJld2lyZWxlc3MuY29tMScwJQYJKoZIhvcNAQkBFhhzYWNoaW5AbGlicmV3aXJl\n"\
-"bGVzcy5jb20wHhcNMjAwMjIxMTQyOTE1WhcNMjEwMjIwMTQyOTE1WjCBmDELMAkG\n"\
-"A1UEBhMCVVMxCzAJBgNVBAgMAldBMQ4wDAYDVQQHDAVQbGFjZTEWMBQGA1UECgwN\n"\
-"TGlicmV3aXJlbGVzczELMAkGA1UECwwCSVQxHjAcBgNVBAMMFXd3dy5saWJyZXdp\n"\
-"cmVsZXNzLmNvbTEnMCUGCSqGSIb3DQEJARYYc2FjaGluQGxpYnJld2lyZWxlc3Mu\n"\
-"Y29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAncJCX0ExqabAbeN6\n"\
-"Axh013KkvNYBWqeod1LgN5ng4MUrgwpzGZvN9NBtbWrF0L3DfDcZ0R/RzFdEmuKJ\n"\
-"TKBYksAO1uXI7g1kUSo99w5ECm2WyzX6ExN9hyjTLjolukNzwa2lMIQAdCcpDtN9\n"\
-"FEXkDmsciwn/Qr/vfOkz/OlbemrVsBLISGRtOoDYCpm3MvSDm9Aev7fCZ1O3ny8F\n"\
-"ms3tAhRi0OHdPLUQmrlPzJfd8In+E2oZO4tduKd5mgKTZV24RSdi8MBX5rRN6EDf\n"\
-"AU+t7MpoCpKazt88B+uNfnyvDW1qrRk3YnJWgOeqZWEHvS0NUDWAiSAa43rDxNdQ\n"\
-"AmUN/QIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQDLN1hDQ8WCpFIpi7CDUI/INqPL\n"\
-"NxstLCaVlHayDcJUlowHArkt/UzTKHicrAosVtUZT6hfh+SK4DXbx8gfqBWt82BU\n"\
-"bI4YeJCotvYqPLTERMh2B3q1oICD+7D7aQN81M3WeIr9qHUA7yDcS+NlCjehSMns\n"\
-"oQe2FdCL+udrmYdTPtjnXFd73QN5mbFF3dIqa7NVRu7olE4qPtilY0P0Cn3u2Hq5\n"\
-"OQUbbaPW76c74MsCW7ykkzcZwLGGAfcmQrFIefwOhc973lDPvbqJgYAIyG5I0obg\n"\
-"XJ6kYxXyEL/UMOk5nVxRpxfHgnCaOaz3uh5sd/UlN9bU1WWAkkYsBgPvotlf\n"\
-"-----END CERTIFICATE-----"
+#include <stdint.h>
 
 /*
- * @brief PEM-encoded issuer certificate for AWS IoT Just In Time Registration (JITR).
- *
- * @todo If you are using AWS IoT Just in Time Registration (JITR), set this to
- * the issuer (Certificate Authority) certificate of the client certificate above.
- *
- * @note This setting is required by JITR because the issuer is used by the AWS
- * IoT gateway for routing the device's initial request. (The device client
- * certificate must always be sent as well.) For more information about JITR, see:
- *  https://docs.aws.amazon.com/iot/latest/developerguide/jit-provisioning.html,
- *  https://aws.amazon.com/blogs/iot/just-in-time-registration-of-device-certificates-on-aws-iot/.
- *
- * If you're not using JITR, set below to NULL.
+ * PEM-encoded client certificate.
  *
  * Must include the PEM header and footer:
  * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * "-----END CERTIFICATE-----\n"
+ * "-----END CERTIFICATE-----"
  */
-#define keyJITR_DEVICE_CERTIFICATE_AUTHORITY_PEM    ""
+#define keyCLIENT_CERTIFICATE_PEM \
+"-----BEGIN CERTIFICATE-----\n"\
+"MIIDWjCCAkKgAwIBAgIVAOgL+dxgKNsOuPdlmwq2vCZJ/ilEMA0GCSqGSIb3DQEB\n"\
+"CwUAME0xSzBJBgNVBAsMQkFtYXpvbiBXZWIgU2VydmljZXMgTz1BbWF6b24uY29t\n"\
+"IEluYy4gTD1TZWF0dGxlIFNUPVdhc2hpbmd0b24gQz1VUzAeFw0yMDA0MjIxMzUx\n"\
+"MDdaFw00OTEyMzEyMzU5NTlaMB4xHDAaBgNVBAMME0FXUyBJb1QgQ2VydGlmaWNh\n"\
+"dGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDQzOxKXmqyZBlPrHAj\n"\
+"oa4APn3/E8cXqIUQTuX+5zJExtvnS2qUY/dtqPiz9gN9lkq/1Qw2FYjmTctXbbqc\n"\
+"69F9f30VqT0gU56F0/m752skTtQnpB7QVRKpB5TjQ+fG3+L9ZVyfOwD/umwkpjvx\n"\
+"2QB5IbUvfyRm9zQIUo56JQTYTLyqWv4MAIHHf5qLeZXU9QEx9ISRtRPfiazefWwv\n"\
+"UmdEDhYKUOZj/GQ99xb+1TFNS9QfEIXhSY8zYgU4FEGl65GbIB4bsNoAZZ3/MM1z\n"\
+"CMuNzCtRVkSNJjY8lsQ/NfKA/LL3/Ic79iCPC3f2x37BbGwIuCtaGfN0kStEyXRc\n"\
+"2zRJAgMBAAGjYDBeMB8GA1UdIwQYMBaAFIR9s7lNKD4R8MwYSubUzo6M8zHLMB0G\n"\
+"A1UdDgQWBBROzEaVF125hBPZ4XU/iT5tNdz1kjAMBgNVHRMBAf8EAjAAMA4GA1Ud\n"\
+"DwEB/wQEAwIHgDANBgkqhkiG9w0BAQsFAAOCAQEANTm8yW64+w7TZ3DmMblSJ8EK\n"\
+"cojGJW6Hk5W0M4lhjocjcVbuDHmcbXlOye2zj5mo2vC+aX7x/qBD5yqYcyR1BfGM\n"\
+"vY8CSWGmcSZ5qBjR6HkplCJZ5AAKXgwDVHisTf/mc73O+NMtkSYu3srregTJifBW\n"\
+"ajovqgFpzicdTGwipmm+Bm9t2DW7vqbqtgQw2xgylg4zzYvHRR7o6qu5YNDq3T2s\n"\
+"5gqwFSduHUKsnVf8+/HPfkeswZJv59lfz9SIK5VGLcPL4jMXkqai99iqmVLUiPDa\n"\
+"z3+ckzApFQ1NsT+5D1qGEBYyAUvo61tL31dYjpApwmz5XZ1LdBqialn9bzWw1A==\n"\
+"-----END CERTIFICATE-----"
 
 /*
- * @brief PEM-encoded client private key.
+ * PEM-encoded client private key.
  *
- * @todo If you are running one of the FreeRTOS demo projects, set this
- * to the private key that will be used for TLS client authentication.
- *
- * @note Must include the PEM header and footer:
+ * Must include the PEM header and footer:
  * "-----BEGIN RSA PRIVATE KEY-----\n"\
  * "...base64 data...\n"\
- * "-----END RSA PRIVATE KEY-----\n"
+ * "-----END RSA PRIVATE KEY-----"
  */
-#define keyCLIENT_PRIVATE_KEY_PEM                   \
+#define keyCLIENT_PRIVATE_KEY_PEM \
 "-----BEGIN RSA PRIVATE KEY-----\n"\
-"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\n"\
+"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\n"\
 "-----END RSA PRIVATE KEY-----"
+
+/*
+ * PEM-encoded Just-in-Time Registration (JITR) certificate (optional).
+ *
+ * If used, must include the PEM header and footer:
+ * "-----BEGIN CERTIFICATE-----\n"\
+ * "...base64 data...\n"\
+ * "-----END CERTIFICATE-----"
+ */
+#define keyJITR_DEVICE_CERTIFICATE_AUTHORITY_PEM  ""
+
 
 #endif /* AWS_CLIENT_CREDENTIAL_KEYS_H */

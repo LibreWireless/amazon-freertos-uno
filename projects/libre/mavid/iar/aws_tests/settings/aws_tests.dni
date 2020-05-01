@@ -9,7 +9,7 @@ TriggerName=main
 LimitSize=0
 ByteLimit=50
 [DebugChecksum]
-Checksum=614781287
+Checksum=-220324310
 [CodeCoverage]
 Enabled=_ 0
 [Exceptions]
@@ -116,8 +116,7 @@ ShowTiming=0
 mode=0
 [Breakpoints2]
 Bp0=_ 0 "EMUL_DATA" "0x20006800" 0 0 0 0 4294967295
-Bp1=_ 1 "EMUL_CODE" "{$PROJ_DIR$\..\..\..\..\..\tests\common\aws_test_runner.c}.104.9" 0 0 1 "" 0 "" 0
-Count=2
+Count=1
 [Aliases]
 Count=0
 SuppressDialog=0
