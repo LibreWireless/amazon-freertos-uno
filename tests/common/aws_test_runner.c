@@ -63,7 +63,6 @@ unsigned int xHeapAfter;
 static void RunTests( void )
 {
     /* Tests can be disabled in aws_test_runner_config.h */
-
     /* The FreeRTOS qualification program requires that Wi-Fi and TCP be the
      * first tests in this function. */
     #if ( testrunnerFULL_WIFI_ENABLED == 1 )
