@@ -44,7 +44,7 @@
 #include "mbedtls/pem.h"
 #endif
 
-void mbedtls_x509write_csr_init( mbedtls_x509write_csr *ctx 
+void mbedtls_x509write_csr_init( mbedtls_x509write_csr *ctx )
 {
     memset( ctx, 0, sizeof( mbedtls_x509write_csr ) );
 }

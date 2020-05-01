@@ -29,8 +29,7 @@
  */
 
 /* Standard includes. */
-#include <string.h>
-#include <stdio.h>
+#include "string.h"
 
 /* MQTT includes. */
 #include "iot_mqtt.h"

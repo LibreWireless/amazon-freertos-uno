@@ -38,7 +38,7 @@
 
 /* Driver includes */
 #include "iot_spi.h"
-#include "iot_test_common_io_internal.h"
+#include "test_iot_internal.h"
 
 /* FreeRTOS includes */
 #include "FreeRTOS.h"
@@ -46,7 +46,6 @@
 
 #define SPI_BUFFER_SIZE                       ( 32 )
 #define testIotSPI_DEFAULT_SEMAPHORE_DELAY    ( 3000U )
-#define _MESSAGE_LENGTH                       ( 50 )
 
 /*-----------------------------------------------------------*/
 
@@ -54,7 +53,6 @@
  * framework invoking these tests */
 /*-----------------------------------------------------------*/
 uint32_t ultestIotSpiInstance = 0;                                /* Test SPI Instance */
-uint32_t ulAssistedTestIotSpiInstance = 0;                        /* Assisted Test SPI Instance */
 uint32_t ultestIotSPIFrequency = 500000U;                         /* Test SPI Frequency */
 uint32_t ultestIotSPIDummyValue = 0;                              /* Test SPI Dummy Value */
 IotSPIMode_t xtestIotSPIDefaultConfigMode = eSPIMode0;            /* Default SPI eSPIMode0 */
@@ -66,15 +64,6 @@ uint32_t ultestIotSpiSlave = 0;
 
 
 /*-----------------------------------------------------------*/
-/* The message string output by assisted test. */
-static char _cMsg[ _MESSAGE_LENGTH ] = { 0 };
-
-/* Append bytes in the buffer to _cMsg, starting at given offset. */
-static void prvAppendToMessage( size_t * pOffset,
-                                uint8_t * pBuffer,
-                                size_t bufferLen );
-/* Output message _cMsg. */
-static void prvOutputMessage();
 
 /**
  * @brief Application/POSIX defined callback for asynchronous operations
@@ -102,8 +91,6 @@ TEST_SETUP( TEST_IOT_SPI )
 {
     xtestIotSPISemaphore = xSemaphoreCreateBinaryStatic( &xtestIotSPICompleted );
     TEST_ASSERT_NOT_EQUAL( NULL, xtestIotSPISemaphore );
-
-    memset( _cMsg, 0, _MESSAGE_LENGTH );
 }
 /*-----------------------------------------------------------*/
 
@@ -158,9 +145,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_OpenClose )
     IotSPIHandle_t xSPIHandle;
     int32_t lRetVal;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -177,6 +166,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_Init )
     IotSPIMasterConfig_t xNewConfig, xOrigConfig, xConfirmConfig;
     int32_t lRetVal;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -202,6 +192,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_Init )
         TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
     }
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -220,10 +211,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadSync )
     uint8_t ucRxBuf[ 4 ] = { 0xff, 0xff, 0xff, 0xff };
     size_t xBytesRx;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -252,11 +244,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadSync )
         }
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -273,25 +265,26 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadSyncAssisted )
     int32_t lRetVal;
     int32_t lLoop = 0;
     uint8_t ucRxBuf[ 16 ] = { 0 };
+    char cMsg[ 50 ] = { 0 };
     size_t xBytesRx;
-    size_t msgOffset = 0;
 
     /* If unit test and assisted test have different spi slave, make sure select slave function in
      * ll hal is defined and select the slave for assisted slave. */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        #ifdef ASSISTED_TEST_COMMON_IO_SPI_SLAVE_SELECET_SUPPORTED
+            lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
             TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
         #else
             TEST_ASSERT_MESSAGE( 0, "Assisted test has a different salve, but slave select is not supported." );
         #endif
     }
 
-    xSPIHandle = iot_spi_open( ulAssistedTestIotSpiInstance );
+    /* Open SPI handle */
+    xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -314,25 +307,31 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadSyncAssisted )
         TEST_ASSERT_EQUAL( xBytesRx, 4 );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
-    /* Restore the original selected slave device, in order to reset to the original state before this test. */
+    /* restore slave select */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ultestIotSpiSlave );
-            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        #endif
+        lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
     }
 
-    prvAppendToMessage( &msgOffset, ucRxBuf, sizeof( ucRxBuf ) );
-    prvOutputMessage();
+    /* Create a string with read bytes and print it to console. */
+    for( int i = 0, j = 0, len = sizeof( ucRxBuf ); i < len; i++ )
+    {
+        cMsg[ j++ ] = ',';
+        uint8_t upp = ucRxBuf[ i ] >> 4, low = ucRxBuf[ i ] & 0xF;
+        cMsg[ j++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ j++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
+    }
+
+    TEST_IGNORE_MESSAGE( cMsg );
 }
 
 /**
@@ -348,10 +347,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadAsync )
     size_t xBytesRx;
     int32_t lLoop = 0;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -388,11 +388,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadAsync )
         }
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -408,26 +408,27 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadAsyncAssisted )
     IotSPIMasterConfig_t xOrigConfig, xTestConfig;
     int32_t lRetVal;
     uint8_t ucRxBuf[ 16 ] = { 0 };
+    char cMsg[ 50 ] = { 0 };
     size_t xBytesRx;
     int32_t lLoop = 0;
-    size_t msgOffset = 0;
 
     /* If unit test and assisted test have different spi slave, make sure select slave function in
      * ll hal is defined and select the slave for assisted slave. */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        #ifdef ASSISTED_TEST_COMMON_IO_SPI_SLAVE_SELECET_SUPPORTED
+            lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
             TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
         #else
             TEST_ASSERT_MESSAGE( 0, "Assisted test has a different salve, but slave select is not supported." );
         #endif
     }
 
-    xSPIHandle = iot_spi_open( ulAssistedTestIotSpiInstance );
+    /* Open SPI handle */
+    xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -458,26 +459,33 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadAsyncAssisted )
         TEST_ASSERT_EQUAL( xBytesRx, 4 );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
-    /* Restore the original selected slave device, in order to reset to the original state before this test. */
+    /* restore slave select */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ultestIotSpiSlave );
-            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        #endif
+        lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
     }
 
-    prvAppendToMessage( &msgOffset, ucRxBuf, sizeof( ucRxBuf ) );
-    prvOutputMessage();
+    /* Create a string with read bytes and print it to console. */
+    for( int i = 0, j = 0, len = sizeof( ucRxBuf ); i < len; i++ )
+    {
+        cMsg[ j++ ] = ',';
+        uint8_t upp = ucRxBuf[ i ] >> 4, low = ucRxBuf[ i ] & 0xF;
+        cMsg[ j++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ j++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
+    }
+
+    TEST_IGNORE_MESSAGE( cMsg );
 }
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Test Function to test spi write sync
@@ -491,10 +499,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteSync )
     uint8_t ucTxBuf[ 4 ] = { 0, 2, 4, 6 };
     size_t xBytesTx;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -517,11 +526,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteSync )
         TEST_ASSERT_EQUAL( xBytesTx, 4 );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -536,36 +545,38 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteSyncAssisted )
     IotSPIMasterConfig_t xOrigConfig, xTestConfig;
     int32_t lRetVal;
     uint8_t ucTxBuf[ 16 ] = { 0 };
+    char cMsg[ 50 ] = { 0 };
     size_t xBytesTx;
-    size_t i = 0;
-    size_t msgOffset = 0;
 
     srand( xTaskGetTickCount() );
 
-    /* Generate random tx bytes. */
-    for( ; i < sizeof( ucTxBuf ); i++ )
+    /* Generate random tx bytes and load them to a string to print later. */
+    for( int i = 0, j = 0, len = sizeof( ucTxBuf ); i < len; i++ )
     {
         ucTxBuf[ i ] = ( uint8_t ) rand();
+        cMsg[ j++ ] = ',';
+        uint8_t upp = ucTxBuf[ i ] >> 4, low = ucTxBuf[ i ] & 0xF;
+        cMsg[ j++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ j++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
     }
-
-    prvAppendToMessage( &msgOffset, ucTxBuf, sizeof( ucTxBuf ) );
 
     /* If unit test and assisted test have different spi slave, make sure select slave function in
      * ll hal is defined and select the slave for assisted slave. */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        #ifdef ASSISTED_TEST_COMMON_IO_SPI_SLAVE_SELECET_SUPPORTED
+            lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
             TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
         #else
             TEST_ASSERT_MESSAGE( 0, "Assisted test has a different salve, but slave select is not supported." );
         #endif
     }
 
-    xSPIHandle = iot_spi_open( ulAssistedTestIotSpiInstance );
+    /* Open SPI handle */
+    xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -587,24 +598,22 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteSyncAssisted )
         TEST_ASSERT_EQUAL( xBytesTx, 4 );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
-    /* Restore the original selected slave device, in order to reset to the original state before this test. */
+    /* restore slave select */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ultestIotSpiSlave );
-            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        #endif
+        lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
     }
 
-    prvOutputMessage();
+    TEST_IGNORE_MESSAGE( cMsg );
 }
 
 /**
@@ -619,10 +628,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteAsync )
     uint8_t ucTxBuf[ 4 ] = { 0, 2, 4, 6 };
     size_t xBytesTx;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -653,16 +663,104 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteAsync )
         TEST_ASSERT_EQUAL( xBytesTx, 4 );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
 
+/**
+ * @brief Assisted Test Function to test spi write async
+ *
+ */
+TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteAsyncAssisted )
+{
+    IotSPIHandle_t xSPIHandle;
+    IotSPIMasterConfig_t xOrigConfig, xTestConfig;
+    int32_t lRetVal;
+    uint8_t ucTxBuf[ 16 ] = { 0 };
+    char cMsg[ 50 ] = { 0 };
+    size_t xBytesTx;
 
+    srand( xTaskGetTickCount() );
+
+    /* Generate random tx bytes and load them to a string to print later. */
+    for( int i = 0, j = 0, len = sizeof( ucTxBuf ); i < len; i++ )
+    {
+        ucTxBuf[ i ] = ( uint8_t ) rand();
+        cMsg[ j++ ] = ',';
+        uint8_t upp = ucTxBuf[ i ] >> 4, low = ucTxBuf[ i ] & 0xF;
+        cMsg[ j++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ j++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
+    }
+
+    /* If unit test and assisted test have different spi slave, make sure select slave function in
+     * ll hal is defined and select the slave for assisted slave. */
+    if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
+    {
+        #ifdef ASSISTED_TEST_COMMON_IO_SPI_SLAVE_SELECET_SUPPORTED
+            lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
+            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+        #else
+            TEST_ASSERT_MESSAGE( 0, "Assisted test has a different salve, but slave select is not supported." );
+        #endif
+    }
+
+    /* Open SPI handle */
+    xSPIHandle = iot_spi_open( ultestIotSpiInstance );
+    TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
+
+    /* save original configuration */
+    lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
+    TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+
+    if( TEST_PROTECT() )
+    {
+        /* configure bus */
+        xTestConfig.ulFreq = ultestIotSPIFrequency;
+        xTestConfig.eMode = xtestIotSPIDefaultConfigMode;
+        xTestConfig.eSetBitOrder = xtestIotSPIDefaultconfigBitOrder;
+        xTestConfig.ucDummyValue = ultestIotSPIDummyValue;
+
+        lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xTestConfig );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+
+        /* Set a callback for async call */
+        iot_spi_set_callback( xSPIHandle, prvSpiAsyncCallback, NULL );
+
+        /* Make async write call */
+        lRetVal = iot_spi_write_async( xSPIHandle, ucTxBuf, sizeof( ucTxBuf ) );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+
+        /*Wait for the callback. */
+        lRetVal = xSemaphoreTake( xtestIotSPISemaphore, testIotSPI_DEFAULT_SEMAPHORE_DELAY );
+        TEST_ASSERT_EQUAL( pdTRUE, lRetVal );
+
+        lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetTxNoOfbytes, &xBytesTx );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+        TEST_ASSERT_EQUAL( xBytesTx, 4 );
+    }
+
+    /* restore original configuration */
+    lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
+    TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+
+    /* Close SPI handle */
+    lRetVal = iot_spi_close( xSPIHandle );
+    TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+
+    /* restore slave select */
+    if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
+    {
+        lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
+    }
+
+    TEST_IGNORE_MESSAGE( cMsg );
+}
 /*-----------------------------------------------------------*/
 
 /**
@@ -679,10 +777,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferSync )
     int32_t lLoop = 0;
     size_t xBytesTx, xBytesRx;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -715,11 +814,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferSync )
         }
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -739,35 +838,36 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferSyncAssisted )
     char cMsg[ 50 ] = { 0 };
     int32_t lLoop = 0;
     size_t xBytesTx, xBytesRx;
-    size_t i = 0;
-    size_t msgOffset = 0;
 
     srand( xTaskGetTickCount() );
 
-    /* Generate random tx bytes. */
-    for( ; i < sizeof( ucTxBuf ); i++ )
+    /* Generate random tx bytes and load them to a string to print later. */
+    for( int i = 0, len = sizeof( ucTxBuf ); i < len; i++ )
     {
         ucTxBuf[ i ] = ( uint8_t ) rand();
+        cMsg[ lLoop++ ] = ',';
+        uint8_t upp = ucTxBuf[ i ] >> 4, low = ucTxBuf[ i ] & 0xF;
+        cMsg[ lLoop++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ lLoop++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
     }
-
-    prvAppendToMessage( &msgOffset, ucTxBuf, sizeof( ucTxBuf ) );
 
     /* If unit test and assisted test have different spi slave, make sure select slave function in
      * ll hal is defined and select the slave for assisted slave. */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        #ifdef ASSISTED_TEST_COMMON_IO_SPI_SLAVE_SELECET_SUPPORTED
+            lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
             TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
         #else
             TEST_ASSERT_MESSAGE( 0, "Assisted test has a different salve, but slave select is not supported." );
         #endif
     }
 
-    xSPIHandle = iot_spi_open( ulAssistedTestIotSpiInstance );
+    /* Open SPI handle */
+    xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -794,27 +894,32 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferSyncAssisted )
         TEST_ASSERT_EQUAL( 4, xBytesTx );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
-    /* Restore the original selected slave device, in order to reset to the original state before this test. */
+    /* restore slave select */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ultestIotSpiSlave );
-            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        #endif
+        lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
     }
 
-    prvAppendToMessage( &msgOffset, ucRxBuf, sizeof( ucRxBuf ) );
-    prvOutputMessage();
-}
+    /* Append read bytes to string. */
+    for( int i = 0, len = sizeof( ucRxBuf ); i < len; i++ )
+    {
+        cMsg[ lLoop++ ] = ',';
+        uint8_t upp = ucRxBuf[ i ] >> 4, low = ucRxBuf[ i ] & 0xF;
+        cMsg[ lLoop++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ lLoop++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
+    }
 
+    TEST_IGNORE_MESSAGE( cMsg );
+}
 /*-----------------------------------------------------------*/
 
 /**
@@ -830,10 +935,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferAsync )
     uint8_t ucTxBuf[ 4 ] = { 0x00, 0x02, 0x04, 0x06 };
     int32_t lLoop = 0;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -866,11 +972,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferAsync )
         }
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -889,35 +995,36 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferAsyncAssisted )
     uint8_t ucTxBuf[ 8 ] = { 0 };
     char cMsg[ 50 ] = { 0 };
     int32_t lLoop = 0;
-    size_t i = 0;
-    size_t msgOffset = 0;
 
     srand( xTaskGetTickCount() );
 
-    /* Generate random tx bytes. */
-    for( ; i < sizeof( ucTxBuf ); i++ )
+    /* Generate random tx bytes and load them to a string to print later. */
+    for( int i = 0, len = sizeof( ucTxBuf ); i < len; i++ )
     {
         ucTxBuf[ i ] = ( uint8_t ) rand();
+        cMsg[ lLoop++ ] = ',';
+        uint8_t upp = ucTxBuf[ i ] >> 4, low = ucTxBuf[ i ] & 0xF;
+        cMsg[ lLoop++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ lLoop++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
     }
-
-    prvAppendToMessage( &msgOffset, ucTxBuf, sizeof( ucTxBuf ) );
 
     /* If unit test and assisted test have different spi slave, make sure select slave function in
      * ll hal is defined and select the slave for assisted slave. */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        #ifdef ASSISTED_TEST_COMMON_IO_SPI_SLAVE_SELECET_SUPPORTED
+            lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
             TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
         #else
             TEST_ASSERT_MESSAGE( 0, "Assisted test has a different salve, but slave select is not supported." );
         #endif
     }
 
-    xSPIHandle = iot_spi_open( ulAssistedTestIotSpiInstance );
+    /* Open SPI handle */
+    xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /* Save the original configuration for later restore. */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -944,117 +1051,33 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferAsyncAssisted )
         TEST_ASSERT_EQUAL( pdTRUE, lRetVal );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
-    /* Restore the original selected slave device, in order to reset to the original state before this test. */
+    /* restore slave select */
     if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
     {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ultestIotSpiSlave );
-            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        #endif
+        lRetVal = iot_spi_select_slave( ultestIotSpiInstance, ulAssistedTestIotSpiSlave );
+        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
     }
 
-    prvAppendToMessage( &msgOffset, ucRxBuf, sizeof( ucRxBuf ) );
-    prvOutputMessage();
+    /* Append read bytes to string. */
+    for( int i = 0, len = sizeof( ucRxBuf ); i < len; i++ )
+    {
+        cMsg[ lLoop++ ] = ',';
+        uint8_t upp = ucRxBuf[ i ] >> 4, low = ucRxBuf[ i ] & 0xF;
+        cMsg[ lLoop++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
+        cMsg[ lLoop++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
+    }
+
+    TEST_IGNORE_MESSAGE( cMsg );
 }
-
-/**
- * @brief Assisted Test Function to test spi write async
- *
- */
-TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteAsyncAssisted )
-{
-    IotSPIHandle_t xSPIHandle;
-    IotSPIMasterConfig_t xOrigConfig, xTestConfig;
-    int32_t lRetVal;
-    uint8_t ucTxBuf[ 16 ] = { 0 };
-    char cMsg[ 50 ] = { 0 };
-    size_t xBytesTx;
-    size_t i = 0;
-    size_t msgOffset = 0;
-
-    srand( xTaskGetTickCount() );
-
-    /* Generate random tx bytes. */
-    for( ; i < sizeof( ucTxBuf ); i++ )
-    {
-        ucTxBuf[ i ] = ( uint8_t ) rand();
-    }
-
-    prvAppendToMessage( &msgOffset, ucTxBuf, sizeof( ucTxBuf ) );
-
-    /* If unit test and assisted test have different spi slave, make sure select slave function in
-     * ll hal is defined and select the slave for assisted slave. */
-    if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
-    {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ulAssistedTestIotSpiSlave );
-            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        #else
-            TEST_ASSERT_MESSAGE( 0, "Assisted test has a different salve, but slave select is not supported." );
-        #endif
-    }
-
-    xSPIHandle = iot_spi_open( ulAssistedTestIotSpiInstance );
-    TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
-
-    /* Save the original configuration for later restore. */
-    lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
-    TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-
-    if( TEST_PROTECT() )
-    {
-        /* configure bus */
-        xTestConfig.ulFreq = ultestIotSPIFrequency;
-        xTestConfig.eMode = xtestIotSPIDefaultConfigMode;
-        xTestConfig.eSetBitOrder = xtestIotSPIDefaultconfigBitOrder;
-        xTestConfig.ucDummyValue = ultestIotSPIDummyValue;
-
-        lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xTestConfig );
-        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-
-        /* Set a callback for async call */
-        iot_spi_set_callback( xSPIHandle, prvSpiAsyncCallback, NULL );
-
-        /* Make async write call */
-        lRetVal = iot_spi_write_async( xSPIHandle, ucTxBuf, sizeof( ucTxBuf ) );
-        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-
-        /*Wait for the callback. */
-        lRetVal = xSemaphoreTake( xtestIotSPISemaphore, testIotSPI_DEFAULT_SEMAPHORE_DELAY );
-        TEST_ASSERT_EQUAL( pdTRUE, lRetVal );
-
-        lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetTxNoOfbytes, &xBytesTx );
-        TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        TEST_ASSERT_EQUAL( xBytesTx, 4 );
-    }
-
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
-    lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
-    TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-
-    lRetVal = iot_spi_close( xSPIHandle );
-    TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-
-    /* Restore the original selected slave device, in order to reset to the original state before this test. */
-    if( ulAssistedTestIotSpiSlave != ultestIotSpiSlave )
-    {
-        #ifdef IOT_TEST_COMMON_IO_SPI_SLAVE_SELECT_SUPPORTED
-            lRetVal = iot_spi_select_slave( ulAssistedTestIotSpiInstance, ultestIotSpiSlave );
-            TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
-        #endif
-    }
-
-    prvOutputMessage();
-}
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Test Function to test spi cancel with nothing to cancel
@@ -1065,6 +1088,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_CancelFail )
     IotSPIHandle_t xSPIHandle;
     int32_t lRetVal;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1078,6 +1102,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_CancelFail )
         }
     }
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1096,10 +1121,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_CancelSuccess )
     uint8_t ucTxBuf[ 4 ] = { 0x00, 0x02, 0x04, 0x06 };
     BaseType_t xCallbackReturn;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
-    /** Save the original configuration for later restore. * / */
+    /* save original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPIGetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
@@ -1130,11 +1156,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_CancelSuccess )
         TEST_ASSERT_EQUAL( pdFALSE, xCallbackReturn );
     }
 
-    /* Restore the original configuration saved in the beginning of this test,
-     * in order to reset to the original state before this test. */
+    /* restore original configuration */
     lRetVal = iot_spi_ioctl( xSPIHandle, eSPISetMasterConfig, &xOrigConfig );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1174,9 +1200,11 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_CloseFuzzing )
     IotSPIHandle_t xSPIHandle;
     int32_t lRetVal;
 
+    /* Close with NULL handle */
     lRetVal = iot_spi_close( NULL );
     TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1203,6 +1231,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_IoctlFuzzing )
     IotSPIIoctlRequest_t xRequest;
     int32_t lRetVal;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1251,6 +1280,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_IoctlFuzzing )
         TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
     }
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1266,6 +1296,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadSyncFuzzing )
     int32_t lRetVal;
     uint8_t ucBuffer[ SPI_BUFFER_SIZE ];
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1278,6 +1309,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadSyncFuzzing )
     lRetVal = iot_spi_read_sync( xSPIHandle, ucBuffer, 0 );
     TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1293,6 +1325,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadAsyncFuzzing )
     int32_t lRetVal;
     uint8_t ucBuffer[ SPI_BUFFER_SIZE ];
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1305,6 +1338,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_ReadAsyncFuzzing )
     lRetVal = iot_spi_read_async( xSPIHandle, ucBuffer, 0 );
     TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1320,6 +1354,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteSyncFuzzing )
     int32_t lRetVal;
     uint8_t ucBuffer[ SPI_BUFFER_SIZE ];
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1332,6 +1367,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteSyncFuzzing )
     lRetVal = iot_spi_write_sync( xSPIHandle, ucBuffer, 0 );
     TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1347,6 +1383,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteAsyncFuzzing )
     int32_t lRetVal;
     uint8_t ucBuffer[ SPI_BUFFER_SIZE ];
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1359,6 +1396,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_WriteAsyncFuzzing )
     lRetVal = iot_spi_write_async( xSPIHandle, ucBuffer, 0 );
     TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1375,6 +1413,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferSyncFuzzing )
     uint8_t ucRxBuffer[ SPI_BUFFER_SIZE ];
     uint8_t ucTxBuffer[ SPI_BUFFER_SIZE ];
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1390,6 +1429,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferSyncFuzzing )
     lRetVal = iot_spi_transfer_sync( xSPIHandle, ucRxBuffer, ucTxBuffer, 0 );
     TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1406,6 +1446,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferAsyncFuzzing )
     uint8_t ucRxBuffer[ SPI_BUFFER_SIZE ];
     uint8_t ucTxBuffer[ SPI_BUFFER_SIZE ];
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1421,6 +1462,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_TransferAsyncFuzzing )
     lRetVal = iot_spi_transfer_async( xSPIHandle, ucRxBuffer, ucTxBuffer, 0 );
     TEST_ASSERT_EQUAL( IOT_SPI_INVALID_VALUE, lRetVal );
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
@@ -1435,6 +1477,7 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_CancelFuzzing )
     IotSPIHandle_t xSPIHandle;
     int32_t lRetVal;
 
+    /* Open SPI handle */
     xSPIHandle = iot_spi_open( ultestIotSpiInstance );
     TEST_ASSERT_NOT_EQUAL( NULL, xSPIHandle );
 
@@ -1453,34 +1496,8 @@ TEST( TEST_IOT_SPI, AFQP_IotSPI_CancelFuzzing )
         TEST_ASSERT_EQUAL( IOT_SPI_NOTHING_TO_CANCEL, lRetVal );
     }
 
+    /* Close SPI handle */
     lRetVal = iot_spi_close( xSPIHandle );
     TEST_ASSERT_EQUAL( IOT_SPI_SUCCESS, lRetVal );
 }
 /*-----------------------------------------------------------*/
-
-
-
-/*-----------------------------------------------------------*/
-
-static void prvAppendToMessage( size_t * pOffset,
-                                uint8_t * pBuffer,
-                                size_t bufferLen )
-{
-    size_t i = 0;
-    size_t offset = *pOffset;
-
-    for( ; i < bufferLen && offset + 2 < _MESSAGE_LENGTH; i++ )
-    {
-        _cMsg[ offset++ ] = ',';
-        uint8_t upp = pBuffer[ i ] >> 4, low = pBuffer[ i ] & 0xF;
-        _cMsg[ offset++ ] = upp + ( upp > 9 ? 'A' - 10 : '0' );
-        _cMsg[ offset++ ] = low + ( low > 9 ? 'A' - 10 : '0' );
-    }
-
-    *pOffset = offset;
-}
-
-static void prvOutputMessage()
-{
-    TEST_IGNORE_MESSAGE( _cMsg );
-}

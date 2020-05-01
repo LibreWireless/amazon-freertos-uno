@@ -33,6 +33,6 @@ class gattClient(attributesCommon):
     descriptors = {}
 
     @staticmethod
-    def updateLocalAttributeTable( bEnableIncludedService ):
+    def updateLocalAttributeTable():
         services = testutils.find_gatt_service_in_objects(
-            gattClient.services, gattClient.characteristics, gattClient.descriptors, bEnableIncludedService)
+            gattClient.services, gattClient.characteristics, gattClient.descriptors)

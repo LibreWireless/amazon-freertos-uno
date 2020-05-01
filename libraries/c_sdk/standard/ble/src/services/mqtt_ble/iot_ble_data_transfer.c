@@ -462,17 +462,16 @@ static bool _resizeChannelBuffer( IotBleDataChannelBuffer_t * pChannelBuffer,
      */
     if( pChannelBuffer->pBuffer == NULL )
     {
-        size_t resultingLength = requiredLength > initialLength ? requiredLength : initialLength;
-        pChannelBuffer->pBuffer = IotBle_Malloc( resultingLength );
+        pChannelBuffer->pBuffer = IotBle_Malloc( initialLength );
 
         if( pChannelBuffer->pBuffer != NULL )
         {
-            pChannelBuffer->bufferLength = resultingLength;
+            pChannelBuffer->bufferLength = initialLength;
             pChannelBuffer->head = pChannelBuffer->tail = 0;
         }
         else
         {
-            IotLogError( "Failed to allocate a buffer of size %d", resultingLength );
+            IotLogError( "Failed to allocate a buffer of size %d", initialLength );
             result = false;
         }
     }
@@ -521,6 +520,7 @@ static void _ControlCharCallback( IotBleAttributeEvent_t * pEventParam )
     IotBleAttributeData_t attrData = { 0 };
     IotBleEventResponse_t resp;
     IotBleDataTransferService_t * pService;
+    uint8_t value;
     IotBleDataTransferChannelEvent_t channelEvent;
 
     resp.pAttrData = &attrData;
@@ -564,10 +564,7 @@ static void _ControlCharCallback( IotBleAttributeEvent_t * pEventParam )
             resp.eventStatus = eBTStatusSuccess;
         }
 
-        if( pEventParam->xEventType == eBLEWrite )
-        {
-            IotBle_SendResponse( &resp, pEventParam->pParamWrite->connId, pEventParam->pParamWrite->transId );
-        }
+        IotBle_SendResponse( &resp, pEventParam->pParamWrite->connId, pEventParam->pParamWrite->transId );
     }
 }
 
@@ -619,7 +616,7 @@ static void _TXLargeMesgCharCallback( IotBleAttributeEvent_t * pEventParam )
 
         pService = _getServiceFromHandle( pEventParam->pParamRead->attrHandle );
 
-        if( pService && ( pService->channel.isOpen == true ) )
+        if( pService->channel.isOpen == true )
         {
             length = ( pService->channel.sendBuffer.head - pService->channel.sendBuffer.tail );
 
@@ -784,6 +781,7 @@ static void _clientCharCfgDescrCallback( IotBleAttributeEvent_t * pEventParam )
     IotBleAttributeData_t attrData = { 0 };
     IotBleEventResponse_t resp;
     IotBleDataTransferService_t * pService;
+    uint16_t CCFGValue;
 
     resp.pAttrData = &attrData;
     resp.rspErrorStatus = eBTRspErrorNone;
@@ -830,6 +828,7 @@ static void _connectionCallback( BTStatus_t status,
                                  BTBdaddr_t * pRemoteBdAddr )
 {
     uint8_t index;
+    IotBleDataTransferService_t * pService;
 
     if( status == eBTStatusSuccess )
     {
@@ -899,30 +898,6 @@ bool _registerCallbacks()
     return ret;
 }
 
-
-bool _unregisterCallbacks()
-{
-    IotBleEventsCallbacks_t callback = { 0 };
-    BTStatus_t status;
-    bool retVal = true;
-
-    callback.pConnectionCb = _connectionCallback;
-    status = IotBle_UnRegisterEventCb( eBLEConnection, callback );
-
-    if( status == eBTStatusSuccess )
-    {
-        callback.pMtuChangedCb = _MTUChangedCallback;
-        status = IotBle_UnRegisterEventCb( eBLEMtuChanged, callback );
-    }
-
-    if( status != eBTStatusSuccess )
-    {
-        retVal = false;
-    }
-
-    return retVal;
-}
-
 static bool _initializeService( IotBleDataTransferService_t * pService,
                                 const BTAttribute_t * pAttributeTable )
 {
@@ -968,33 +943,11 @@ static bool _initializeChannel( IotBleDataTransferChannel_t * pChannel )
     return ret;
 }
 
-static void _cleanupChannel( IotBleDataTransferChannel_t * pChannel )
-{
-    IotBleDataTransfer_Close( pChannel );
-    IotBleDataTransfer_Reset( pChannel );
-    IotSemaphore_Destroy( &pChannel->sendComplete );
-}
-
-static bool _cleanupService( IotBleDataTransferService_t * pService )
-{
-    BTStatus_t status;
-    bool ret = true;
-
-    pService->isReady = false;
-    status = IotBle_DeleteService( &pService->gattService );
-
-    if( status != eBTStatusSuccess )
-    {
-        IotLogError( "Failed to delete data transfer GATT service, error = %d.", status );
-        ret = false;
-    }
-
-    return ret;
-}
-
 
 bool IotBleDataTransfer_Init( void )
 {
+    static bool callbacksRegistered = false;
+    IotBleDataTransferService_t * pService = NULL;
     uint8_t index;
     bool ret;
 
@@ -1026,32 +979,6 @@ bool IotBleDataTransfer_Init( void )
     }
 
     return ret;
-}
-
-bool IotBleDataTransfer_Cleanup( void )
-{
-    bool status = true;
-    size_t index;
-
-    /* Unregister callbacks to not receive more events. */
-    status = _unregisterCallbacks();
-
-    /* Close any open channel and delete the services. */
-    if( status == true )
-    {
-        for( index = 0; index < _numDataTransferServices; index++ )
-        {
-            _cleanupChannel( &_services[ index ].channel );
-            status = _cleanupService( &_services[ index ] );
-
-            if( status == false )
-            {
-                break;
-            }
-        }
-    }
-
-    return status;
 }
 
 /*-----------------------------------------------------------*/
@@ -1113,21 +1040,18 @@ bool IotBleDataTransfer_SetCallback( IotBleDataTransferChannel_t * pChannel,
 
 void IotBleDataTransfer_Close( IotBleDataTransferChannel_t * pChannel )
 {
-    if( pChannel->isOpen == true )
+    pChannel->isOpen = false;
+
+    /* Nobody writes/reads from send buffer after timeout value. */
+    ( void ) IotSemaphore_TimedWait( &pChannel->sendComplete, pChannel->timeout );
+    _deleteChannelBuffer( &pChannel->sendBuffer );
+    IotSemaphore_Post( &pChannel->sendComplete );
+    _deleteChannelBuffer( &pChannel->lotBuffer );
+    pChannel->pReceiveBuffer = NULL;
+
+    if( pChannel->callback != NULL )
     {
-        pChannel->isOpen = false;
-
-        /* Nobody writes/reads from send buffer after timeout value. */
-        ( void ) IotSemaphore_TimedWait( &pChannel->sendComplete, pChannel->timeout );
-        _deleteChannelBuffer( &pChannel->sendBuffer );
-        IotSemaphore_Post( &pChannel->sendComplete );
-        _deleteChannelBuffer( &pChannel->lotBuffer );
-        pChannel->pReceiveBuffer = NULL;
-
-        if( pChannel->callback != NULL )
-        {
-            pChannel->callback( IOT_BLE_DATA_TRANSFER_CHANNEL_CLOSED, pChannel, pChannel->pContext );
-        }
+        pChannel->callback( IOT_BLE_DATA_TRANSFER_CHANNEL_CLOSED, pChannel, pChannel->pContext );
     }
 }
 
@@ -1189,6 +1113,7 @@ size_t IotBleDataTransfer_Send( IotBleDataTransferChannel_t * pChannel,
                                 const uint8_t * const pMessage,
                                 size_t messageLength )
 {
+    uint8_t * pData;
     size_t remainingLength = messageLength;
 
     if( pChannel->isOpen )

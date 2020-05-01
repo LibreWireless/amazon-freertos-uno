@@ -32,16 +32,14 @@
 #include "unity.h"
 #include "unity_fixture.h"
 
+/* Driver includes */
 #include "iot_i2c.h"
-#include "iot_test_common_io_internal.h"
 
 #include "FreeRTOS.h"
 #include "semphr.h"
 
-/* Max allowed length of data to write. */
-#ifndef IOT_TEST_COMMON_IO_I2C_MAX_WRITE_LENGTH
-    #define IOT_TEST_COMMON_IO_I2C_MAX_WRITE_LENGTH    ( 10 )
-#endif
+/* Common IO config includes. */
+#include "test_iot_config.h"
 
 /*-----------------------------------------------------------*/
 #define testIotI2C_BAUDRATE               IOT_I2C_FAST_MODE_BPS
@@ -621,6 +619,10 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CReadAsyncFailReadTwice )
         lRetVal = iot_i2c_ioctl( xI2CHandle, eI2CSetSlaveAddr, &uctestIotI2CSlaveAddr );
         TEST_ASSERT_EQUAL( IOT_I2C_SUCCESS, lRetVal );
 
+        /* Set i2c configuration */
+        lRetVal = iot_i2c_ioctl( xI2CHandle, eI2CSendNoStopFlag, NULL );
+        TEST_ASSERT_EQUAL( IOT_I2C_SUCCESS, lRetVal );
+
         /* read from i2c device */
         lRetVal = iot_i2c_read_async( xI2CHandle, ucBuffer, sizeof( ucBuffer ) );
         TEST_ASSERT_EQUAL( IOT_I2C_SUCCESS, lRetVal );
@@ -691,6 +693,9 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CCancelReadSuccess )
 
     if( TEST_PROTECT() )
     {
+        /* Set completion callback */
+        iot_i2c_set_callback( xI2CHandle, prvI2CCallback, NULL );
+
         /* Set i2c configuration. */
         lRetVal = iot_i2c_ioctl( xI2CHandle, eI2CSetMasterConfig, &xI2CConfig );
         TEST_ASSERT_EQUAL( IOT_I2C_SUCCESS, lRetVal );
@@ -706,9 +711,6 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CCancelReadSuccess )
         /* write the device register address. */
         lRetVal = iot_i2c_write_sync( xI2CHandle, &xtestIotI2CDeviceRegister, sizeof( xtestIotI2CDeviceRegister ) );
         TEST_ASSERT_EQUAL( IOT_I2C_SUCCESS, lRetVal );
-
-        /* Set completion callback */
-        iot_i2c_set_callback( xI2CHandle, prvI2CCallback, NULL );
 
         /* Set i2c slave address */
         lRetVal = iot_i2c_ioctl( xI2CHandle, eI2CSetSlaveAddr, &uctestIotI2CSlaveAddr );
@@ -804,7 +806,7 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CWriteAsyncSuccess )
     IotI2CHandle_t xI2CHandle;
     int32_t lRetVal;
     uint8_t writeVal1[] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal };
-    uint8_t writeVal2[ IOT_TEST_COMMON_IO_I2C_MAX_WRITE_LENGTH ] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal };
+    uint8_t writeVal2[] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal, uctestIotI2CWriteVal, uctestIotI2CWriteVal };
 
     uint16_t writeBytes;
 
@@ -852,7 +854,7 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CWriteAsyncSuccess )
 
         lRetVal = iot_i2c_ioctl( xI2CHandle, eI2CGetTxNoOfbytes, &writeBytes );
         TEST_ASSERT_EQUAL( IOT_I2C_SUCCESS, lRetVal );
-        /* Assert the number of written bytes. */
+        /* Assert the number of bytes being written is 4. */
         TEST_ASSERT_EQUAL( sizeof( writeVal2 ), writeBytes );
     }
 
@@ -869,7 +871,7 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CWriteAsyncFailIoctl )
 {
     IotI2CHandle_t xI2CHandle;
     int32_t lRetVal;
-    uint8_t writeVal[ IOT_TEST_COMMON_IO_I2C_MAX_WRITE_LENGTH ] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal };
+    uint8_t writeVal[] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
     IotI2CConfig_t xI2CConfig =
     {
@@ -919,7 +921,7 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CWriteAsyncFailWriteTwice )
 {
     IotI2CHandle_t xI2CHandle;
     int32_t lRetVal;
-    uint8_t writeVal[ IOT_TEST_COMMON_IO_I2C_MAX_WRITE_LENGTH ] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal };
+    uint8_t writeVal[] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
     IotI2CConfig_t xI2CConfig =
     {
@@ -1070,7 +1072,7 @@ TEST( TEST_IOT_I2C, AFQP_IotI2CWriteSyncSuccess )
     IotI2CHandle_t xI2CHandle;
     int32_t lRetVal;
     uint8_t writeVal1[] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal };
-    uint8_t writeVal2[ IOT_TEST_COMMON_IO_I2C_MAX_WRITE_LENGTH ] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal };
+    uint8_t writeVal2[] = { xtestIotI2CDeviceRegister, uctestIotI2CWriteVal, uctestIotI2CWriteVal, uctestIotI2CWriteVal };
 
     uint16_t writeBytes;
 

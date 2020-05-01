@@ -92,15 +92,6 @@ class runTest:
     COMPANY_ID = 741
     MANU_DATA = 5
 
-    # Service Data
-    # First 16 bit are Service UUID (randomly select 0xEF12 for test purpose)
-    # Next bytes are Data related to this Service (randomly select 0xD6 for test purpose)
-    SERV_UUID = "000012ef-0000-1000-8000-00805f9b34fb"
-    SERV_DATA = 214
-
-    # The maximum possible attribute size is 512 bytes. Long write/read tests use 512 for data length.
-    LONG_READ_WRITE_LEN = 512
-
     testDevice = []
 
     DUT_MTU_2_STRING = "a" * (MTU_SIZE - 3)
@@ -359,7 +350,8 @@ class runTest:
 
     @staticmethod
     def writereadLongCharacteristic():
-        long_value = "1" * runTest.LONG_READ_WRITE_LEN
+        # TODO: get correct mtu size, assume 200 for now
+        long_value = "1" * (runTest.MTU_SIZE + 10)
         bleAdapter.writeCharacteristic(runTest.DUT_OPEN_CHAR_UUID, long_value)
         (isTestSuccessfull, charRead) = bleAdapter.readCharacteristic(
             runTest.DUT_OPEN_CHAR_UUID)
@@ -441,7 +433,7 @@ class runTest:
         return isTestSuccessfull
 
     @staticmethod
-    def checkUUIDs(gatt, bEnableSecondaryService):
+    def checkUUIDs(gatt):
         isTestSuccessfull = True
         if runTest.DUT_SERVICEB_UUID not in gatt.services.keys():
             print(
@@ -454,8 +446,8 @@ class runTest:
                 runTest.DUT_SERVICEC_UUID)
             isTestSuccessfull = False
 
-        #Check secondary service UUID
-        if bEnableSecondaryService == True and ENABLE_TC_AFQP_SECONDARY_SERVICE == 1 :
+        # Check secondary service UUID
+        if (ENABLE_TC_AFQP_SECONDARY_SERVICE == 1):
             if runTest.DUT_SERVICEC_UUID not in gatt.services.keys():
                 print(
                     "checkUUIDs test: missing secondary service UUID: " +
@@ -558,6 +550,8 @@ class runTest:
 
         # If manufacture data doesn't exist, return None
         if(manufacture_data_dict is None):
+            print("No Manufacture Data")
+            sys.stdout.flush()
             return None
 
         # If manufacture data exists, return manufacture data
@@ -565,31 +559,8 @@ class runTest:
             print("Manufacturer Specific Data: " +
                   str(manufacture_data_dict.items()))
             sys.stdout.flush()
-            if manufacture_data_dict.get(runTest.COMPANY_ID) != None:
-                manufacture_data = manufacture_data_dict[runTest.COMPANY_ID]
-                return manufacture_data
-            else:
-                return None
-
-    @staticmethod
-    def get_service_data(testDevice, DUT_UUID=None):
-        service_data_dict = bleAdapter.getPropertie(
-            testDevice, "ServiceData")
-
-        # If service data doesn't exist, return None
-        if(service_data_dict is None):
-            return None
-
-        # If service data exists, return service data
-        else:
-            print("Service Data: " +
-                  str(service_data_dict.items()))
-            sys.stdout.flush()
-            if service_data_dict.get(runTest.SERV_UUID) != None:
-                service_data = service_data_dict[runTest.SERV_UUID]
-                return service_data
-            else:
-                return None
+            manufacture_data = manufacture_data_dict[runTest.COMPANY_ID]
+            return manufacture_data
 
     @staticmethod
     def _advertisement_start(scan_filter, UUID, discoveryEvent_Cb, bleAdapter):
@@ -638,102 +609,52 @@ class runTest:
         return True
 
     @staticmethod
-    def Check_ManufactureData(scan_filter,
-                                        bleAdapter,
-                                        bEnableManufactureData):
-        isTestSuccessFull = True
-
-        runTest._advertisement_start(
-            scan_filter=scan_filter,
-            UUID=runTest.DUT_UUID_16,
-            discoveryEvent_Cb=runTest.discoveryEventCb_16bit,
-            bleAdapter=bleAdapter)
-        manufacture_data = runTest.get_manufacture_data(runTest.testDevice)
-
-        if bEnableManufactureData == False:
-            if manufacture_data is not None:
-                print("ERROR: MANU_DATA is not None")
-                isTestSuccessFull &= False
-        else:
-            if manufacture_data is None:
-                print("ERROR: MANU_DATA is not None")
-                isTestSuccessFull &= False
-            else:
-                for data in manufacture_data:
-                    if data != runTest.MANU_DATA:
-                        print( "MANU_DATA is not correct. Data received: %d" %data)
-                        isTestSuccessFull &= False
-        
-        runTest._simple_connect()
-        runTest.stopAdvertisement(scan_filter)
-        isTestSuccessFull &= bleAdapter.disconnect()
-        testutils.removeBondedDevices()
-
-        return isTestSuccessFull
-
-    @staticmethod
-    def Check_ServiceData(scan_filter,
-                                    bleAdapter,
-                                    bEnableServiceData):
-        isTestSuccessFull = True
-
-        runTest._advertisement_start(
-            scan_filter=scan_filter,
-            UUID=runTest.DUT_UUID_16,
-            discoveryEvent_Cb=runTest.discoveryEventCb_16bit,
-            bleAdapter=bleAdapter)
-        service_data = runTest.get_service_data(runTest.testDevice)
-
-        if bEnableServiceData == False:
-            if service_data is not None:
-                print("ERROR: SERV_DATA is not None")
-                isTestSuccessFull &= False
-        else:
-            if service_data is None:
-                print("ERROR: SERV_DATA is None")
-                isTestSuccessFull &= False
-            else:
-                for data in service_data:
-                    if data != runTest.SERV_DATA:
-                        print( "SERV_DATA is not correct. Data received: %d" %data)
-                        isTestSuccessFull &= False
-        
-        runTest._simple_connect()
-        runTest.stopAdvertisement(scan_filter)
-        isTestSuccessFull &= bleAdapter.disconnect()
-        testutils.removeBondedDevices()
-
-        return isTestSuccessFull
-
-    @staticmethod
     def Advertise_With_Manufacture_Data(scan_filter,
                                         bleAdapter):
         isTestSuccessFull = True
 
         # Check when manufacture data length is 0, but pointer is valid
-        isTestSuccessFull &= runTest.Check_ManufactureData(scan_filter, bleAdapter, False)
+        runTest._advertisement_start(
+            scan_filter=scan_filter,
+            UUID=runTest.DUT_UUID_128,
+            discoveryEvent_Cb=runTest.discoveryEventCb,
+            bleAdapter=bleAdapter)
+        manufacture_data = runTest.get_manufacture_data(runTest.testDevice)
+        if manufacture_data is not None:
+            isTestSuccessFull = False
+        runTest._simple_connect()
+        runTest.stopAdvertisement(scan_filter)
+        isTestSuccessFull &= bleAdapter.disconnect()
+        testutils.removeBondedDevices()
 
         # Check when manufacture data pointer is NULL, but length is not 0
-        isTestSuccessFull &= runTest.Check_ManufactureData(scan_filter, bleAdapter, False)
+        runTest._advertisement_start(
+            scan_filter=scan_filter,
+            UUID=runTest.DUT_UUID_128,
+            discoveryEvent_Cb=runTest.discoveryEventCb,
+            bleAdapter=bleAdapter)
+        manufacture_data = runTest.get_manufacture_data(runTest.testDevice)
+        if manufacture_data is not None:
+            isTestSuccessFull = False
+        runTest._simple_connect()
+        runTest.stopAdvertisement(scan_filter)
+        isTestSuccessFull &= bleAdapter.disconnect()
+        testutils.removeBondedDevices()
 
         # Check when manufacture data length is not 0, and pointer is valid
-        isTestSuccessFull &= runTest.Check_ManufactureData(scan_filter, bleAdapter, True)
-
-        return isTestSuccessFull
-
-    @staticmethod
-    def Advertise_With_Service_Data(scan_filter,
-                                        bleAdapter):
-        isTestSuccessFull = True
-
-        # Check when service data length is 0, but pointer is valid
-        isTestSuccessFull &= runTest.Check_ServiceData(scan_filter, bleAdapter, False)
-
-        # Check when service data pointer is NULL, but length is not 0
-        isTestSuccessFull &= runTest.Check_ServiceData(scan_filter, bleAdapter, False)
-
-        # Check when service data length is not 0, and pointer is valid
-        isTestSuccessFull &= runTest.Check_ServiceData(scan_filter, bleAdapter, True)
+        runTest._advertisement_start(
+            scan_filter=scan_filter,
+            UUID=runTest.DUT_UUID_128,
+            discoveryEvent_Cb=runTest.discoveryEventCb,
+            bleAdapter=bleAdapter)
+        manufacture_data = runTest.get_manufacture_data(runTest.testDevice)
+        for data in manufacture_data:
+            if data != runTest.MANU_DATA:
+                isTestSuccessFull = False
+        runTest._simple_connect()
+        runTest.stopAdvertisement(scan_filter)
+        isTestSuccessFull &= bleAdapter.disconnect()
+        testutils.removeBondedDevices()
 
         return isTestSuccessFull
 
@@ -770,7 +691,7 @@ class runTest:
         runTest._simple_connect()
 
         isTestSuccessFull = runTest.discoverPrimaryServices()
-        bleAdapter.gatt.updateLocalAttributeTable( False )
+        bleAdapter.gatt.updateLocalAttributeTable()
 
         time.sleep(2)  # wait for connection parameters update
         # Second time disconnect
@@ -786,7 +707,7 @@ class runTest:
 
         # write result back to server
         isTestSuccessFull = runTest.discoverPrimaryServices()
-        bleAdapter.gatt.updateLocalAttributeTable( False )
+        bleAdapter.gatt.updateLocalAttributeTable()
 
         isTestSuccessFull &= runTest.writeResultWithoutResponse(
             chr(isTestSuccessFull + 48))
@@ -809,7 +730,7 @@ class runTest:
 
         runTest.stopAdvertisement(scan_filter)
         isTestSuccessFull_discover = runTest.discoverPrimaryServices()
-        bleAdapter.gatt.updateLocalAttributeTable( False )
+        bleAdapter.gatt.updateLocalAttributeTable()
 
         time.sleep(2)  # wait for connection parameters update
 
@@ -856,7 +777,7 @@ class runTest:
             isTestSuccessFull,
             runTest.discoverPrimaryServices)
 
-        bleAdapter.gatt.updateLocalAttributeTable( False )
+        bleAdapter.gatt.updateLocalAttributeTable()
 
         # Check device not present. After discovery of services, advertisement
         # should have stopped.
@@ -944,47 +865,11 @@ class runTest:
             isTestSuccessFull,
             runTest.discoverPrimaryServices)
 
-        bleAdapter.gatt.updateLocalAttributeTable( False )
+        bleAdapter.gatt.updateLocalAttributeTable()
 
         isTestSuccessFull &= bleAdapter.pair_cancelpairing()
 
         time.sleep(2)
-        testutils.removeBondedDevices()
-
-        return isTestSuccessFull
-
-    @staticmethod
-    def Change_MTU_Size(scan_filter, bleAdapter):
-        runTest._advertisement_start(scan_filter=scan_filter,
-                                     UUID=runTest.DUT_UUID_128,
-                                     discoveryEvent_Cb=runTest.discoveryEventCb,
-                                     bleAdapter=bleAdapter)
-        runTest._simple_connect()
-        time.sleep(5)
-
-        isTestSuccessFull = bleAdapter.disconnect()
-        testutils.removeBondedDevices()
-
-        return isTestSuccessFull
-
-    @staticmethod
-    def Callback_NULL_check(scan_filter, bleAdapter):
-        runTest._advertisement_start(scan_filter=scan_filter,
-                                     UUID=runTest.DUT_UUID_128,
-                                     discoveryEvent_Cb=runTest.discoveryEventCb,
-                                     bleAdapter=bleAdapter)
-        runTest._simple_connect()
-
-        isTestSuccessFull = runTest.discoverPrimaryServices()
-        runTest.submitTestResult(
-            isTestSuccessFull,
-            runTest.discoverPrimaryServices)
-
-        bleAdapter.gatt.updateLocalAttributeTable( False )
-        isTestSuccessFull &= runTest.checkUUIDs(bleAdapter.gatt, False)
-        time.sleep(5)
-
-        isTestSuccessFull &= bleAdapter.disconnect()
         testutils.removeBondedDevices()
 
         return isTestSuccessFull
