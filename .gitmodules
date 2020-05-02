@@ -2,7 +2,7 @@
 	path = freertos_kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
 [submodule "libraries/3rdparty/http-parser"]
-	path = libraries/3rdparty/http-parser
+	path = libraries/3rdparty/http_parser
 	url = https://github.com/nodejs/http-parser.git
 [submodule "libraries/3rdparty/pkcs11"]
 	path = libraries/3rdparty/pkcs11
